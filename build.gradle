@@ -1,0 +1,122 @@
+plugins { // 건드리지 않는다!
+	id 'java'
+	
+	// 패키징 선택을 war로 할때에만 나오게 됩니다.
+	id 'war'
+	
+	// 현재 프로젝트에서 사용할 스프링부트 프로젝트의 버전과
+	id 'org.springframework.boot' version '3.3.2'
+	
+	// 현재 버전의 스프링부트가 자동관리하는 모든 의존성 설정에 대한
+	// 버전관리를 수행하는 플러그인
+	id 'io.spring.dependency-management' version '1.1.6'
+}
+
+// --------------------------------------
+// 건드리지 않는다!
+// --------------------------------------
+group = 'org.zerock'
+version = '0.0.1-SNAPSHOT'
+
+
+// --------------------------------------
+// (1) 현재 프로젝트 빌드시 사용할 자바버전 설정
+// --------------------------------------
+// Spring Initializr가 만들어준 기본 java 블록 설정때문에,
+// Refresh Gradle Project 할때에 무조건 오류가 발생하는 이유는,
+// 현재 그래도 가장최신버전의 eclipse 나 intellij에 통합되어 있는
+// gradle 버전이, Spring Initilizr가 가정하는 gradle버전보다 한 단계 낮기 
+// 때문입니다. 그래서 아래와 같이 수정해야 오류가 발생하지 않습니다.
+// --------------------------------------
+java {
+	// 자바소스파일의 버전 - 자바17로 설정
+	sourceCompatibility = '17'
+	// 자바타겟컴파일 클래스의 버전 - 자바17로 설정
+	targetCompatibility = '17'
+}
+
+
+// --------------------------------------
+// (2) lombok 의존성 설정을 수월하게 하기 위한 추가설정 들어갑니다.
+// --------------------------------------
+// lombok 을 main 소스와 test 소스 양쪽에서 모두 사용가능하도록
+// 여기에 설정을 추가해서, 아래의 의존성 설정에 적용하면, 단 한번만으로
+// main과 test 소스에서 lombok 적용이 가능해집니다. (실전)	
+
+configurations {
+	// annotationProcessor 범위를 compileOnly까지 확장하도록 하겠습니다!!
+	compileOnly {	
+		extendsFrom annotationProcessor
+	}
+	
+	// testAnnotationProcessor 범위를 testCompileOnly 까지 확장하도록 하겠습니다!!
+	testCompileOnly {	
+		extendsFrom testAnnotationProcessor
+	}
+}
+
+// 아래의 의존성 설정대로, 의존성 라이브러리를 다운로드할 저장소 설정
+repositories {
+	// 의존성 설정대로 라이브러리를 다운로드할 원격 저장소로
+	// Maven 중앙저장소 설정 - 수정하지 말것!!!  (건드리지 않는다!)
+	mavenCentral()
+}
+
+// --------------------------------------
+// (3) 각 프로젝트에서 필요한 모든 의존성 설정
+// --------------------------------------
+// 이 블록이, 가장 개발자에게 중요한, 의존성 설정 블록입니다.
+// Maven의 POM.xml 파일에서 <dependepencies> 태그에 해당되는 부분으로
+// 용도와 설정과 기능이 동일합니다.
+dependencies {	// 아래의 각 줄이 하나의 의존성 설정에 해당됩니다.
+
+	// ------------------------------------------
+	// 문법: 범위 '문자열(그룹ID:아티팩트ID:버전)'
+	// ------------------------------------------
+	
+	// 범위: implementation -  Maven 의 compile과 똑같다.
+	//       providedRuntime - Maven 의 provided과 똑같다.
+	//       developmentOnly - Maven 에는 없는 것으로, 개발시에만 사용됨 
+	//       compileOnly     - Maven 의 compile과 비슷하기는 하지만 다르다! 왜? 컴파일시에만 사용
+	//       runtimeOnly     - Maven 의 runtime과 똑같다. 컴파일시에는 사용안되고, 실행중에만 사용
+	//       annotationProcessor - 말그대로 어노테이션처리기로, lombok처럼 어노테이션을 클래스의
+	//                             멤버로 변환해줄때에만 사용되는 처리기이다!!!
+	//       test 로 시작    - Maven 의 test과 똑같다. TEST 수행시에만 사용되는 의존성
+	//							src/test/java 에서만 적용되는 의존성
+	
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+	
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	
+	// --------------------------
+	// 아래는 필요없다! (***)
+	// compileOnly 'org.projectlombok:lombok'
+	// testCompileOnly 'org.projectlombok:lombok'
+	// --------------------------
+	
+	// 위의 configurations {} 블록의 설정 덕분에, 어노테이션처리기의 적용범위가
+	// main과 test 소스의 컴파일 할때에 모두 적용되게 됩니다.
+	annotationProcessor 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'	
+	
+	// -------------
+	// 오늘 추가한 의존성은 아래와 같다!
+	// -------------
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	
+	// 아래의 3개의 각 의존성 설정은, 각 데이터베이스별 JDBC Driver 의존성 입니다.
+	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+	
+}
+
+// test 단계(phase)를 수행할 때에, JUnit 플랫폼(=프레임워크)를 사용하겠다!라는
+// 설정입니다! (건드리지 않는다!)
+tasks.named('test') {
+	useJUnitPlatform()
+}
